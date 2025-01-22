@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --no-optional
+RUN npm install --legacy-peer-deps
 
 # Ensure the specific Next.js version is installed
 RUN npm install next@14.2.16
