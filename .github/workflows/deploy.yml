@@ -1,0 +1,51 @@
+name: Deployment Web Application
+
+on:
+  push:
+    branches:
+      - 'main'
+  release:
+    types:
+      - published
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build . \
+            --file Dockerfile \
+            --tag ghcr.io/bossboxing/chao-muang-web:latest
+          docker push ghcr.io/bossboxing/chao-muang-web:latest
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: 'root'
+          password: ${{ secrets.PASSWORD }}
+          port: 22
+          script: |
+            # Navigate to workspace directory
+            cd /root/workspace
+
+            # Update and restart Docker services
+            docker compose pull chao-muang-web
+            docker compose up -d chao-muang-web
+
+            # Clean up unused Docker images
+            docker image prune -af
